@@ -1,9 +1,16 @@
 .env
+app/ibm-credentials.env
 venv/
 
 app/__pycache__/
+app/routers/__pycache__/
+
 
 # persistent database data created
 data/
 
 notes.txt
+
+
+# locally saved audio files
+app/uploads/

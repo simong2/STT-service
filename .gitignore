@@ -15,3 +15,5 @@ notes.txt
 # locally saved audio files
 app/uploads/
 app/splits/
+
+app/prompts.py

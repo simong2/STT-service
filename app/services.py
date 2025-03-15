@@ -6,18 +6,29 @@ from dotenv import load_dotenv
 
 from ibm_watson import SpeechToTextV1
 from ibm_cloud_sdk_core.authenticators import IAMAuthenticator
-import sys
+
+from openai import OpenAI
+import json
+
+from prompts import job, job1, job2
 
 
 def add_tables():
     return database.Base.metadata.create_all(bind=database.engine)
 
+load_dotenv()
+
+# concerning open api 
+
+open_ai_client = OpenAI(
+    api_key=os.environ.get("OPENAPI_KEY"),
+)
+
 
 # concerning 11 api
-load_dotenv()
 API_KEY = os.getenv('API_KEY_2')
 
-client = ElevenLabs(
+elven_client = ElevenLabs(
     api_key=API_KEY,
 )   
 
@@ -55,7 +66,7 @@ def eleven_stt(file_path):
     time_off_set = 0
 
     for file in files:
-        text = client.speech_to_text.convert(
+        text = elven_client.speech_to_text.convert(
             file=open(f"./splits/{file}","rb"),
             model_id="scribe_v1",
             diarize=True,
@@ -82,7 +93,7 @@ def pretty_parser(words, time_off_set):
         if word.type == 'word':
             # only get this once until speaker changes
             if changed:
-                start_time = word.start + time_off_set
+                start_time = format_start_time(word.start + time_off_set)
                 changed = False
 
             if word.speaker_id == "speaker_0":
@@ -110,6 +121,18 @@ def pretty_parser(words, time_off_set):
     return ''.join(out)
 
 
+def format_start_time(time):
+    minutes = 0
+    
+    while time >= 60:
+        time -= 60
+        minutes += 1
+    
+    if time < 10:
+        return f"{minutes}:0{time}"
+    else:
+        return f"{minutes}:{time}"
+        
 
 # delete all files in splits
 def delete_files(path):
@@ -133,3 +156,60 @@ def split_audio_file(file_path):
             chunk.export(f, format="mp3")
 
     print('all 8 mins chunks created: ')
+
+
+
+# identify the speakers from first 200 characters
+def open_ai_get_speakers(transcripted_text):
+    response = open_ai_client.chat.completions.create(
+        model="gpt-4",
+         messages=[
+            {"role": "assistant", "content": job},
+            {
+                "role": "user",
+                "content": f"First 200 characters: {transcripted_text[0:200]}"
+            }
+        ]
+
+    )      
+    res = json.loads(response.choices[0].message.content)
+
+    return res
+
+
+# contextualize STT text 
+def open_ai_contextualize(transcripted_text, speakers):
+    response = open_ai_client.chat.completions.create(
+        model="gpt-4",
+         messages=[
+            {"role": "assistant", "content": job1},
+            {
+                "role": "user",
+                "content": f"Text: {transcripted_text}\nSpeaker data: {speakers}"
+            }
+        ]
+
+    )      
+    res = response.choices[0].message.content
+
+    return res
+
+
+
+# update
+def open_ai_update_text(transcripted_text, speakers, prev_context):
+    response = open_ai_client.chat.completions.create(
+        model="gpt-4",
+         messages=[
+            {"role": "assistant", "content": job2},
+            {
+                "role": "user",
+                "content": f"Text: {transcripted_text}\nSpeaker data: {speakers}\Previous contextualization: {prev_context}"
+            }
+        ]
+
+    )      
+    res = response.choices[0].message.content
+
+    return res
+

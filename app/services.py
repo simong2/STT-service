@@ -204,7 +204,7 @@ def open_ai_update_text(transcripted_text, speakers, prev_context):
             {"role": "assistant", "content": job2},
             {
                 "role": "user",
-                "content": f"Text: {transcripted_text}\nSpeaker data: {speakers}\Previous contextualization: {prev_context}"
+                "content": f"Text: {transcripted_text}\nSpeaker data: {speakers}\nPrevious contextualization: {prev_context}"
             }
         ]
 

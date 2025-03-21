@@ -10,7 +10,6 @@ import json
 # from fastapi.responses import JSONResponse
 from typing import Optional
 
-
 router = APIRouter()
 
 def get_db():
@@ -82,35 +81,6 @@ async def get_job(job_id: int, db: Session = Depends(get_db)):
 
 
 
-##############################
-#
-# routes for ibm watson stt 
-#
-##############################
-@router.post("/jobs/ibm/")
-async def create_job(file: UploadFile = File(...), db: Session = Depends(get_db)):
-    if not os.path.exists("uploads"):
-        os.makedirs("uploads")
-    file_path = f"uploads/{file.filename}"
-    
-    with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-
-    job = models.TranscriptionJob(file_path=file_path)
-    db.add(job)
-    db.commit()
-    db.refresh(job)
-
-    transcript = services.ibm_stt(file_path)
-    
-    job.status = "completed"
-    job.transcript = transcript
-    db.commit()
-
-    return {"job_id": job.id, "transcript": transcript}
-
-
-
 @router.get("/delete/jobs/{job_id}")
 async def get_job(job_id: int, db: Session = Depends(get_db)):
     job = db.query(models.TranscriptionJob).filter(models.TranscriptionJob.id == job_id).first() 
@@ -141,3 +111,4 @@ def update_context(job_id: int, db: Session = Depends(get_db)):
     job.context_text = updated_context
     db.commit()
     return {"id": job_id, "context_text": job.context_text}
+

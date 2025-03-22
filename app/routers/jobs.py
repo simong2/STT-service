@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, UploadFile, File
+from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException, Header
 from sqlalchemy.orm import Session
 import shutil
 import models
@@ -19,6 +19,14 @@ def get_db():
     finally:
         db.close()
 
+# api key
+SECRET_KEY = os.environ.get('KEY')
+
+def api_key_check(api_key: str = Header(...)):
+    if api_key != SECRET_KEY:
+        raise HTTPException(status_code=403, detail="Error 403 - Forbidden")
+    
+
 
 ##############################
 #
@@ -27,7 +35,7 @@ def get_db():
 ##############################
 
 @router.post('/jobs/')
-async def create_job(file: UploadFile = File(...), db: Session = Depends(get_db), speaker0: Optional[str] = Form(None), speaker1: Optional[str] = Form(None)):
+async def create_job(api_key: str = Depends(api_key_check), file: UploadFile = File(...), db: Session = Depends(get_db), speaker0: Optional[str] = Form(None), speaker1: Optional[str] = Form(None)):
     # get a copy of the audio file to put in the database
     if not os.path.exists("uploads"):
         os.makedirs("uploads")

@@ -8,6 +8,7 @@ from openai import OpenAI
 import json
 
 from prompts import job, job1, job2
+import math
 
 
 def add_tables():
@@ -68,7 +69,7 @@ def pretty_parser(words, time_off_set):
         if word.type == 'word':
             # only get this once until speaker changes
             if changed:
-                start_time = format_start_time(word.start + time_off_set)
+                start_time = format_start_time(round(word.start) + time_off_set)
                 changed = False
 
             if word.speaker_id == "speaker_0":

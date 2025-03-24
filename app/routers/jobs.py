@@ -6,7 +6,7 @@ import database
 import services
 import os
 import json
-
+from sqlalchemy.sql import func
 # from fastapi.responses import JSONResponse
 from typing import Optional
 
@@ -117,6 +117,7 @@ def update_context(job_id: int, db: Session = Depends(get_db)):
     speakers = json.loads(job.speaker_info)
     updated_context = services.open_ai_update_text(job.transcript, speakers, job.context_text)
     job.context_text = updated_context
+    job.updated_at = func.now()
     db.commit()
     return {"id": job_id, "context_text": job.context_text}
 
